@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetStore - Toko Peralatan & Perangkat Jaringan</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            50: '#f0f4f8',
+                            100: '#d9e2ec',
+                            500: '#334e68',
+                            800: '#102a43',
+                            900: '#0b192c',
+                            950: '#060e1a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Inter & Font Awesome for Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #0b192c;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- HEADER NAVBAR -->
+    <header class="sticky top-0 z-40 bg-navy-900 text-white shadow-md transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="resetFilters()">
+                    <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg flex items-center justify-center">
+                        <i class="fa-solid fa-network-wired text-xl sm:text-2xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl sm:text-2xl font-bold tracking-tight text-white block leading-none">NetStore</span>
+                        <span class="text-xs text-blue-300 font-medium tracking-wide">Peralatan Jaringan Solutions</span>
+                    </div>
+                </div>
+
+                <!-- Search Bar (Desktop) -->
+                <div class="hidden md:flex flex-1 max-w-md mx-8">
+                    <div class="relative w-full">
+                        <input type="text" id="searchInput" oninput="handleSearch()" 
+                            placeholder="Cari Kabel FO, Router, RJ-45, MikroTik..." 
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-800 text-slate-100 placeholder-slate-400 rounded-xl border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-slate-900 transition-all text-sm">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400"></i>
+                        <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-3 text-slate-400 hover:text-white">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="flex items-center space-x-3 sm:space-x-4">
+                    <!-- Instruction Guide Trigger Button -->
+                    <button onclick="toggleGuideModal()" class="hidden sm:flex items-center space-x-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-blue-300 border border-blue-500/30 px-3 py-2 rounded-lg transition-all" title="Petunjuk Setting Gambar">
+                        <i class="fa-solid fa-circle-info text-blue-400"></i>
+                        <span>Jika ingin kritik klik saya</span>
+                    </button>
+
+                    <!-- Cart Button -->
+                    <button onclick="openCartModal()" class="relative bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center space-x-2 font-medium">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        <span class="hidden sm:inline text-sm">Keranjang</span>
+                        <span id="cartBadge" class="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Search Bar -->
+            <div class="pb-4 md:hidden">
+                <div class="relative w-full">
+                    <input type="text" id="searchInputMobile" oninput="handleSearchMobile()" 
+                        placeholder="Cari router, kabel, RJ-45..." 
+                        class="w-full pl-10 pr-4 py-2 bg-slate-800 text-slate-100 placeholder-slate-400 rounded-xl border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-slate-400 text-sm"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO / BANNER & SETTING NOTICE -->
+    <section class="bg-navy-900 text-white border-t border-slate-800 py-6 px-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="space-y-1 text-center md:text-left">
+                <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Pusat Belanja Perangkat & Kabel Jaringan</h1>
+                <p class="text-xs sm:text-sm text-slate-300">Solusi terlengkap untuk infrastruktur Fiber Optic, LAN, MikroTik & Wireless.</p>
+            </div>
+    </section>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+        <!-- CATEGORY NAVIGATION TABS -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 mb-6 gap-4">
+            <!-- Filter Tabs -->
+            <div class="flex items-center space-x-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-none">
+                <button onclick="setCategory('semua')" id="btnCat-semua" class="category-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-navy-900 text-white shadow-sm">
+                    <i class="fa-solid fa-border-all mr-1.5"></i>Semua Produk
+                </button>
+                <button onclick="setCategory('kabel')" id="btnCat-kabel" class="category-btn px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-all bg-slate-100">
+                    <i class="fa-solid fa-cable-car mr-1.5"></i>Kabel & Aksesoris (FO/UTP)
+                </button>
+                <button onclick="setCategory('perangkat')" id="btnCat-perangkat" class="category-btn px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-all bg-slate-100">
+                    <i class="fa-solid fa-server mr-1.5"></i>Perangkat Jaringan
+                </button>
+            </div>
+
+            <!-- Product Status & Count -->
+            <div class="text-xs sm:text-sm text-slate-500 font-medium flex items-center justify-between sm:justify-end space-x-2">
+                <span>Menampilkan: <strong id="productCount" class="text-navy-900">0</strong> barang</span>
+                <button onclick="toggleGuideModal()" class="text-blue-600 hover:underline sm:hidden text-xs">
+                    <i class="fa-solid fa-gear"></i> Set Gambar
+                </button>
+            </div>
+        </div>
+
+        <!-- PRODUCT GRID -->
+        <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Dynamic JavaScript content will load here -->
+        </div>
+
+        <!-- EMPTY STATE (SEARCH / FILTER NO RESULTS) -->
+        <div id="emptyState" class="hidden text-center py-16">
+            <div class="w-20 h-20 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                <i class="fa-solid fa-magnifying-glass font-light"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-700">Produk Tidak Ditemukan</h3>
+            <p class="text-slate-500 text-sm mt-1 max-w-md mx-auto">Coba masukkan kata kunci pencarian yang lain atau ganti kategori filter di atas.</p>
+            <button onclick="resetFilters()" class="mt-4 px-4 py-2 bg-navy-900 text-white text-sm rounded-xl hover:bg-slate-800 transition-all">
+                Reset Pencarian & Filter
+            </button>
+        </div>
+    </main>
+
+    <!-- MODAL: SHOPPING CART (DRAWER / MODAL) -->
+    <div id="cartModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm transition-opacity">
+        <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between">
+                
+                <!-- Cart Header -->
+                <div class="p-5 bg-navy-900 text-white flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-cart-shopping text-blue-400 text-lg"></i>
+                        <h2 class="text-lg font-bold">Keranjang Belanja</h2>
+                    </div>
+                    <button onclick="closeCartModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Cart Items Container -->
+                <div id="cartItemsList" class="p-5 overflow-y-auto flex-1 divide-y divide-slate-100 custom-scrollbar">
+                    <!-- Dynamic Cart Items -->
+                </div>
+
+                <!-- Cart Summary & Checkout Trigger -->
+                <div class="p-5 bg-slate-50 border-t border-slate-200 space-y-4">
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-sm text-slate-600">
+                            <span>Total Item:</span>
+                            <span id="cartTotalItems" class="font-semibold text-slate-800">0 barang</span>
+                        </div>
+                        <div class="flex justify-between text-base font-bold text-slate-900">
+                            <span>Total Pembayaran:</span>
+                            <span id="cartSubtotal" class="text-blue-700 text-lg">Rp 0</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="closeCartModal()" class="w-full py-3 px-4 border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-xl font-semibold text-sm transition-all">
+                            Lanjut Belanja
+                        </button>
+                        <button id="btnGoToCheckout" onclick="openCheckoutModal()" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                            Lanjut Bayar
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CHECKOUT / HALAMAN PEMBAYARAN -->
+    <div id="checkoutModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm overflow-y-auto p-4 sm:p-6 md:p-10">
+        <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden my-auto border border-slate-100">
+            
+            <!-- Checkout Header -->
+            <div class="bg-navy-900 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-600 p-2 rounded-lg">
+                        <i class="fa-solid fa-file-invoice-dollar text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold">Halaman Pembayaran</h2>
+                        <p class="text-xs text-slate-300">Lengkapi data untuk penyelesaian pesanan</p>
+                    </div>
+                </div>
+                <button onclick="closeCheckoutModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
+                <!-- Form Pengiriman -->
+                <div class="md:col-span-7 space-y-4">
+                    <h3 class="text-sm font-bold text-navy-900 uppercase tracking-wider border-b pb-2">Informasi Pembeli</h3>
+                    
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap *</label>
+                        <input type="text" id="custName" placeholder="Contoh: Budi Santoso" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">No. HP / WhatsApp *</label>
+                            <input type="tel" id="custPhone" placeholder="08123456789" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Email (Opsional)</label>
+                            <input type="email" id="custEmail" placeholder="nama@email.com" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Alamat Pengiriman Lengkap *</label>
+                        <textarea id="custAddress" rows="3" placeholder="Jl. Merdeka No. 123, RT/RW, Kecamatan, Kota/Kabupaten" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-2">Metode Pembayaran *</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center p-3 border rounded-xl cursor-pointer hover:bg-slate-50 border-slate-200">
+                                <input type="radio" name="paymentMethod" value="Transfer Bank BCA" checked class="text-blue-600 focus:ring-blue-500">
+                                <div class="ml-3">
+                                    <span class="block text-sm font-semibold text-slate-800">Transfer Bank (BCA)</span>
+                                    <span class="block text-xs text-slate-500">No. Rek: 1234-5678-90 a.n NetStore</span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center p-3 border rounded-xl cursor-pointer hover:bg-slate-50 border-slate-200">
+                                <input type="radio" name="paymentMethod" value="QRIS / E-Wallet" class="text-blue-600 focus:ring-blue-500">
+                                <div class="ml-3">
+                                    <span class="block text-sm font-semibold text-slate-800">QRIS All Payment</span>
+                                    <span class="block text-xs text-slate-500">Gopay, OVO, Dana, ShopeePay, LinkAja</span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center p-3 border rounded-xl cursor-pointer hover:bg-slate-50 border-slate-200">
+                                <input type="radio" name="paymentMethod" value="COD (Bayar di Tempat)" class="text-blue-600 focus:ring-blue-500">
+                                <div class="ml-3">
+                                    <span class="block text-sm font-semibold text-slate-800">COD (Cash on Delivery)</span>
+                                    <span class="block text-xs text-slate-500">Bayar tunai langsung saat barang tiba</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ringkasan Pesanan -->
+                <div class="md:col-span-5 bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-navy-900 uppercase tracking-wider border-b pb-2 mb-3">Ringkasan Pesanan</h3>
+                        <div id="checkoutItemsSummary" class="space-y-2 text-xs max-h-56 overflow-y-auto custom-scrollbar pr-1 divide-y divide-slate-200">
+                            <!-- Items Summary List -->
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-slate-300 space-y-1.5 text-xs">
+                            <div class="flex justify-between text-slate-600">
+                                <span>Subtotal Barang:</span>
+                                <span id="checkoutSubtotal">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between text-slate-600">
+                                <span>Ongkos Kirim (Estimasi):</span>
+                                <span class="text-green-600 font-semibold">GRATIS</span>
+                            </div>
+                            <div class="flex justify-between text-sm font-bold text-navy-900 pt-2 border-t border-slate-200">
+                                <span>Total Bayar:</span>
+                                <span id="checkoutGrandTotal" class="text-blue-700 text-base">Rp 0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="processOrder()" class="w-full mt-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-green-600/20 transition-all flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <span>Konfirmasi & Buat Pesanan</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-navy-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 border border-slate-700">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-green-400 text-lg"></i>
+        <span id="toastMessage" class="text-sm font-medium">Pesan notifikasi</span>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-navy-900 text-slate-400 text-xs py-8 border-t border-slate-800 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg">
+                    <i class="fa-solid fa-network-wired text-lg"></i>
+                </div>
+                <div>
+                    <span class="text-white font-bold text-sm">NetStore</span> - Peralatan Jaringan Terlengkap
+                    <p class="text-slate-500 mt-0.5">Latar Putih, Akses Biru Tua • Dibuat khusus untuk kemudahan kustomisasi.</p>
+                </div>
+            </div>
+            
+            <div class="text-center md:text-right space-y-1">
+                <p>&copy; 2026 NetStore. All Rights Reserved.</p>
+                <button onclick="toggleGuideModal()" class="text-blue-400 hover:underline">
+                    <i class="fa-solid fa-gear"></i> Petunjuk Setting URL Gambar
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        // =========================================================================
+        // DATA PRODUK PERALATAN JARINGAN
+        // LOKASI SETTING GAMBAR: Masukkan URL foto produk pada properti 'image'
+        // =========================================================================
+        const products = [
+            {
+                id: 1,
+                name: "Kabel Fiber Optic Dropcore 1 Core 3 Seling 1000m",
+                category: "kabel",
+                price: 750000,
+                desc: "Kabel FO outdoor 1 core dengan kawat penguat (seling), panjang 1000 meter.",
+                icon: "fa-cable-car",
+                image: "https://id-test-11.slatic.net/p/6c0ca9a6d919d62624ff36c4cdfd23b6.png" // <-- Masukkan URL Gambar di sini (Contoh: "https://link-gambar.com/fo.jpg")
+            },
+            {
+                id: 2,
+                name: "Pigtail Fiber Optic SC/UPC Simplex 0.9mm 1.5m",
+                category: "kabel",
+                price: 8500,
+                desc: "Pigtail Single Mode SC/UPC untuk terminasi splice cassette ODB/OTB.",
+                icon: "fa-plug",
+                image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSJsdlr1lqJ9EoAgByVJXJ3XRgSQEfPuqmeyOI7U8TODQZqQyOs63hRPjs&s=10"
+            },
+            {
+                id: 3,
+                name: "Kabel UTP Cat6 Belden Original 305m High Speed",
+                category: "kabel",
+                price: 2150000,
+                desc: "Kabel LAN UTP Cat6 murni tembaga, kapasitas transfer data hingga 1Gbps.",
+                icon: "fa-network-wired",
+                image: "https://images.tokopedia.net/img/cache/700/aphluv/1997/1/1/4cf05b3d62f54d5eb8a5d8828889dad9~.jpeg.webp"
+            },
+            {
+                id: 4,
+                name: "Konektor RJ-45 Cat6 Passthrough / Modular Plug (Isi 50 pcs)",
+                category: "kabel",
+                price: 65000,
+                desc: "Konektor RJ45 tembaga tebal untuk koneksi internet LAN presisi tinggi.",
+                icon: "fa-ethernet",
+                image: "https://www.static-src.com/wcsstore/Indraprastha/images/catalog/full/catalog-image/MTA-16862304/no_brand_full01_csf60aai.webp"
+            },
+            {
+                id: 5,
+                name: "Konektor RJ-11 / RJ-16 Telepon / Jaringan Modular 6P4C (Isi 100)",
+                category: "kabel",
+                price: 35000,
+                desc: "Konektor standar RJ-11 / RJ-16 untuk terminal jaringan telepon & PSTN.",
+                icon: "fa-phone",
+                image: "https://down-id.img.susercontent.com/file/sg-11134201-823pq-mp4bgw3nvri8c7"
+            },
+            {
+                id: 6,
+                name: "MikroTik RouterBoard RB750Gr3 (hEX) Gigabit",
+                category: "perangkat",
+                price: 920000,
+                desc: "Routerboard 5 port Gigabit Ethernet dengan CPU Dual Core & Dual Chain.",
+                icon: "fa-microchip",
+                image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQJgW7BdLKtaegi71CLSX75FYU-XmvCfvYJC5XgAa_be5tTUv7a3vf6nJ8c&s=10"
+            },
+            {
+                id: 7,
+                name: "Switch Manageable Cisco Catalyst 24 Port Gigabit",
+                category: "perangkat",
+                price: 3450000,
+                desc: "Switch HUB layer 2/3 untuk manajemen VLAN, Bandwidth & keamanan jaringan enterprise.",
+                icon: "fa-server",
+                image: "https://p16-oec-sg.ibyteimg.com/tos-alisg-i-aphluv4xwc-sg/img/VqbcmM/2025/1/14/05871328-921a-4c4a-9f60-15c89a732082.jpg~tplv-aphluv4xwc-resize-jpeg:700:0.jpg"
+            },
+            {
+                id: 8,
+                name: "Access Point Ubiquiti Unifi AP-AC-Lite Dual Band",
+                category: "perangkat",
+                price: 1350000,
+                desc: "Access Point Wi-Fi Indoor AC1200 dengan manajemen terpusat UniFi Controller.",
+                icon: "fa-wifi",
+                image: "https://image.made-in-china.com/202f0j00LhFpBrZJreka/Unifi-Ap-AC-Indoor-Ubiquiti-Networks-Ubiquiti-Unifi-Ap-AC-Lite-Wireless-Access.webp"
+            },
+            {
+                id: 9,
+                name: "Box ODP Fiber Optic 16 Core Complete Adapter & Splice Tray",
+                category: "perangkat",
+                price: 185000,
+                desc: "Optical Distribution Point (ODP) tiang/dinding lengkap dengan klem & adapter SC.",
+                icon: "fa-box",
+                image: "https://images.tokopedia.net/img/cache/700/VqbcmM/2023/8/8/9146c109-e80f-4f1f-ab19-b9908cab255f.jpg.webp"
+            },
+            {
+                id: 10,
+                name: "Optical Power Meter (OPM) & Visual Fault Locator (VFL) 30mW",
+                category: "kabel",
+                price: 285000,
+                desc: "Alat ukur redaman FO dan laser tester mendeteksi putus kabel serat optik.",
+                icon: "fa-bolt",
+                image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS1jBv71noZuYzy9mCitVsEHc5wzqtYmbFqesOm8mcNG2BMeE4uFg6f1iAt&s=10"
+            },
+            {
+                id: 11,
+                name: "Fusion Splicer Fiber Optic Signal Fire AI-9",
+                category: "perangkat",
+                price: 11500000,
+                desc: "Mesin las penyambung kabel FO otomatis 6 motor kecepatan tinggi & akurat.",
+                icon: "fa-screwdriver-wrench",
+                image: "https://m.media-amazon.com/images/I/71kk8HSHl5L.jpg"
+            },
+            {
+                id: 12,
+                name: "MikroTik CCR1009-7G-1C-1S+ Cloud Core Router",
+                category: "perangkat",
+                price: 7850000,
+                desc: "Router performa tinggi untuk ISP & Data Center dengan port SFP+ 10G.",
+                icon: "fa-server",
+                image: "https://toko.nale.co.id/wp-content/uploads/2020/12/CCR1009-7G-1C-1S.jpg"
+            }
+        ];
+
+        // APP STATE
+        let cart = [];
+        let currentCategory = 'semua';
+        let searchQuery = '';
+
+        // INITIALIZATION
+        window.onload = function() {
+            renderProducts();
+            updateCartUI();
+        };
+
+        // RENDER PRODUCTS GRID
+        function renderProducts() {
+            const grid = document.getElementById('productGrid');
+            const emptyState = document.getElementById('emptyState');
+            grid.innerHTML = '';
+
+            // Filter logic
+            const filtered = products.filter(p => {
+                const matchCategory = (currentCategory === 'semua') || (p.category === currentCategory);
+                const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                    p.desc.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchCategory && matchSearch;
+            });
+
+            document.getElementById('productCount').innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                grid.classList.add('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+                grid.classList.remove('hidden');
+            }
+
+            filtered.forEach(p => {
+                // Card HTML
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl border border-slate-200 hover:border-blue-400 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group";
+
+                // Render Image or Placeholder SVG
+                let imageAreaHtml = '';
+                if (p.image && p.image.trim() !== '') {
+                    imageAreaHtml = `<img src="${p.image}" alt="${p.name}" class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.parentElement.innerHTML=getPlaceholderSvg('${p.icon}');">`;
+                } else {
+                    imageAreaHtml = getPlaceholderSvg(p.icon);
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <!-- Area Gambar / SVG Placeholder -->
+                        <div class="relative bg-slate-100 h-48 flex items-center justify-center border-b border-slate-100 overflow-hidden">
+                            ${imageAreaHtml}
+                            <span class="absolute top-2 right-2 bg-navy-900/80 backdrop-blur-md text-white text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                ${p.category}
+                            </span>
+                        </div>
+
+                        <!-- Content Detail -->
+                        <div class="p-4 space-y-2">
+                            <h3 class="font-bold text-slate-800 text-sm leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors">
+                                ${p.name}
+                            </h3>
+                            <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                                ${p.desc}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Price & Add to Cart -->
+                    <div class="p-4 pt-0 space-y-3">
+                        <div class="text-base font-extrabold text-navy-900">
+                            ${formatRupiah(p.price)}
+                        </div>
+                        <button onclick="addToCart(${p.id})" class="w-full bg-navy-900 hover:bg-blue-600 text-white font-semibold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center space-x-2 transition-all shadow-md active:scale-95">
+                            <i class="fa-solid fa-cart-plus"></i>
+                            <span>Tambah ke Keranjang</span>
+                        </button>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // SVG PLACEHOLDER GENERATOR
+        function getPlaceholderSvg(iconClass) {
+            return `
+                <div class="flex flex-col items-center justify-center text-center p-4 text-slate-400 group-hover:text-blue-600 transition-colors">
+                    <i class="fa-solid ${iconClass} text-4xl mb-2"></i>
+                    <span class="text-[11px] font-medium text-slate-500 bg-white/80 border border-slate-200 px-2 py-1 rounded shadow-sm">
+                        Tempat Gambar (Setting URL)
+                    </span>
+                </div>
+            `;
+        }
+
+        // CATEGORY FILTER HANDLER
+        function setCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('bg-navy-900', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-600');
+            });
+
+            const activeBtn = document.getElementById(`btnCat-${cat}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-100', 'text-slate-600');
+                activeBtn.classList.add('bg-navy-900', 'text-white');
+            }
+
+            renderProducts();
+        }
+
+        // SEARCH HANDLER
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value;
+            toggleClearSearchBtn();
+            renderProducts();
+        }
+
+        function handleSearchMobile() {
+            searchQuery = document.getElementById('searchInputMobile').value;
+            renderProducts();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchInputMobile').value = '';
+            searchQuery = '';
+            toggleClearSearchBtn();
+            renderProducts();
+        }
+
+        function toggleClearSearchBtn() {
+            const btn = document.getElementById('clearSearchBtn');
+            if (searchQuery.length > 0) {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+
+        function resetFilters() {
+            searchQuery = '';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchInputMobile').value = '';
+            toggleClearSearchBtn();
+            setCategory('semua');
+        }
+
+        // CART OPERATIONS
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const existing = cart.find(item => item.id === productId);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+
+            updateCartUI();
+            showToast(`"${product.name}" ditambahkan ke keranjang.`);
+        }
+
+        function updateCartQty(productId, change) {
+            const item = cart.find(i => i.id === productId);
+            if (!item) return;
+
+            item.qty += change;
+            if (item.qty <= 0) {
+                cart = cart.filter(i => i.id !== productId);
+            }
+
+            updateCartUI();
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(i => i.id !== productId);
+            updateCartUI();
+            showToast("Barang dihapus dari keranjang.", "info");
+        }
+
+        function updateCartUI() {
+            const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            // Badge
+            document.getElementById('cartBadge').innerText = totalQty;
+            document.getElementById('cartTotalItems').innerText = `${totalQty} barang`;
+            document.getElementById('cartSubtotal').innerText = formatRupiah(subtotal);
+
+            // Checkout Button State
+            const btnGoToCheckout = document.getElementById('btnGoToCheckout');
+            if (cart.length === 0) {
+                btnGoToCheckout.disabled = true;
+            } else {
+                btnGoToCheckout.disabled = false;
+            }
+
+            // Render Cart Drawer Items
+            const cartItemsList = document.getElementById('cartItemsList');
+            if (cart.length === 0) {
+                cartItemsList.innerHTML = `
+                    <div class="text-center py-12 text-slate-400 space-y-2">
+                        <i class="fa-solid fa-basket-shopping text-4xl"></i>
+                        <p class="text-sm">Keranjang belanja Anda masih kosong.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            cartItemsList.innerHTML = cart.map(item => `
+                <div class="py-3 flex items-center justify-between gap-3">
+                    <div class="flex-1 space-y-1">
+                        <h4 class="text-xs font-bold text-slate-800 line-clamp-1">${item.name}</h4>
+                        <div class="text-xs text-blue-700 font-semibold">${formatRupiah(item.price)}</div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2 border rounded-lg border-slate-200 px-2 py-1">
+                        <button onclick="updateCartQty(${item.id}, -1)" class="text-slate-500 hover:text-red-600 px-1 font-bold">-</button>
+                        <span class="text-xs font-bold px-1">${item.qty}</span>
+                        <button onclick="updateCartQty(${item.id}, 1)" class="text-slate-500 hover:text-green-600 px-1 font-bold">+</button>
+                    </div>
+
+                    <button onclick="removeFromCart(${item.id})" class="text-slate-400 hover:text-red-500 p-1">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // MODALS HANDLER
+        function openCartModal() {
+            document.getElementById('cartModal').classList.remove('hidden');
+        }
+
+        function closeCartModal() {
+            document.getElementById('cartModal').classList.add('hidden');
+        }
+
+        function openCheckoutModal() {
+            if (cart.length === 0) return;
+            closeCartModal();
+
+            // Populate checkout summary
+            const summaryContainer = document.getElementById('checkoutItemsSummary');
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            summaryContainer.innerHTML = cart.map(item => `
+                <div class="flex justify-between items-center py-1.5">
+                    <div class="pr-2">
+                        <span class="font-medium text-slate-800">${item.name}</span>
+                        <span class="text-slate-400 block">${item.qty} x ${formatRupiah(item.price)}</span>
+                    </div>
+                    <span class="font-semibold text-slate-900">${formatRupiah(item.price * item.qty)}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('checkoutSubtotal').innerText = formatRupiah(subtotal);
+            document.getElementById('checkoutGrandTotal').innerText = formatRupiah(subtotal);
+
+            document.getElementById('checkoutModal').classList.remove('hidden');
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal').classList.add('hidden');
+        }
+
+        function toggleGuideModal() {
+            const modal = document.getElementById('guideModal');
+            modal.classList.toggle('hidden');
+        }
+
+        // PROCESS ORDER
+        function processOrder() {
+            const name = document.getElementById('custName').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+            const address = document.getElementById('custAddress').value.trim();
+
+            if (!name || !phone || !address) {
+                showToast("Harap isi Nama, No. HP, dan Alamat lengkap!", "warning");
+                return;
+            }
+
+            const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked').value;
+
+            // Success Action
+            closeCheckoutModal();
+            cart = [];
+            updateCartUI();
+
+            // Reset Form Inputs
+            document.getElementById('custName').value = '';
+            document.getElementById('custPhone').value = '';
+            document.getElementById('custEmail').value = '';
+            document.getElementById('custAddress').value = '';
+
+            showToast(`Pesanan berhasil dibuat! Instruksi pembayaran (${selectedPayment}) dikirim ke WhatsApp Anda.`, "success");
+        }
+
+        // UTILITY FUNCTIONS
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                maximumFractionDigits: 0
+            }).format(number);
+        }
+
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+
+            if (type === "warning") {
+                toastIcon.className = "fa-solid fa-triangle-exclamation text-yellow-400 text-lg";
+            } else if (type === "info") {
+                toastIcon.className = "fa-solid fa-circle-info text-blue-400 text-lg";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-check text-green-400 text-lg";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
