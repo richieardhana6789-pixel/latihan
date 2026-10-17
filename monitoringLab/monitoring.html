@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LabGuard - School PC Lab Monitoring</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b',
+                        bordercol: '#334155'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for usage history graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom scrollbars and transitions */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .transition-smooth { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3"></div>
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 px-6 py-4 flex items-center justify-between shadow-sm">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20 flex items-center justify-center">
+                <i data-lucide="cpu" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                    LabGuard <span class="text-xs px-2 py-0.5 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-full font-medium">Debian 13 Ready</span>
+                </h1>
+                <p class="text-xs text-slate-400">Sistem Monitoring Lab Komputer Sekolah (24 Unit)</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <!-- Server Status Widget button -->
+            <button onclick="switchTab('server')" id="nav-server-btn" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium transition-smooth">
+                <span class="relative flex h-2 w-2">
+                  <span id="server-ping-dot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span id="server-dot" class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span id="server-nav-status">Debian 13: Connected</span>
+            </button>
+
+            <!-- Navigation Tabs -->
+            <nav class="hidden md:flex bg-slate-800/80 p-1 rounded-xl border border-slate-700/60">
+                <button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-sm transition-smooth">Dashboard Lab</button>
+                <button onclick="switchTab('server')" id="btn-tab-server" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-smooth">Server Backend</button>
+            </nav>
+
+            <!-- Quick Action Broadcast All -->
+            <button onclick="openBroadcastModal()" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium transition-smooth">
+                <i data-lucide="megaphone" class="w-3.5 h-3.5 text-indigo-400"></i>
+                <span>Broadcast Pesan</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+
+        <!-- ================= TAB 1: DASHBOARD LAB (24 PC) ================= -->
+        <div id="view-dashboard" class="space-y-6">
+            
+            <!-- Lab Info & Quick Stats Bar -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-medium">Total Perangkat</p>
+                        <h3 class="text-2xl font-bold mt-1">24 <span class="text-xs font-normal text-slate-500">PC Unit</span></h3>
+                    </div>
+                    <div class="bg-indigo-500/10 p-3 rounded-lg border border-indigo-500/20 text-indigo-400">
+                        <i data-lucide="monitor" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-medium">PC Online (Aktif)</p>
+                        <h3 id="stat-online" class="text-2xl font-bold mt-1 text-emerald-400">0</h3>
+                    </div>
+                    <div class="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20 text-emerald-400">
+                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-medium">Peringatan (High Load)</p>
+                        <h3 id="stat-warning" class="text-2xl font-bold mt-1 text-amber-400">0</h3>
+                    </div>
+                    <div class="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20 text-amber-400">
+                        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-medium">PC Offline</p>
+                        <h3 id="stat-offline" class="text-2xl font-bold mt-1 text-rose-400">0</h3>
+                    </div>
+                    <div class="bg-rose-500/10 p-3 rounded-lg border border-rose-500/20 text-rose-400">
+                        <i data-lucide="power-off" class="w-5 h-5"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter & Search Toolbar -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                    <button onclick="setFilter('all')" id="filter-btn-all" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition-smooth whitespace-nowrap">Semua (24)</button>
+                    <button onclick="setFilter('online')" id="filter-btn-online" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-smooth whitespace-nowrap">Online</button>
+                    <button onclick="setFilter('warning')" id="filter-btn-warning" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-smooth whitespace-nowrap">Warning</button>
+                    <button onclick="setFilter('offline')" id="filter-btn-offline" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-smooth whitespace-nowrap">Offline</button>
+                </div>
+
+                <div class="flex items-center space-x-3 w-full md:w-80">
+                    <div class="relative w-full">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                        </span>
+                        <input type="text" id="pc-search-input" oninput="handleSearch()" placeholder="Cari PC (cth: PC-05, IP)..." class="w-full bg-slate-950 border border-slate-700 rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-smooth">
+                    </div>
+                    <button onclick="refreshData()" title="Refresh Data" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 transition-smooth">
+                        <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Grid 24 PCs -->
+            <div id="pc-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- Dynamically populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- ================= TAB 2: DETAIL PC VIEW ================= -->
+        <div id="view-detail" class="hidden space-y-6">
+            <!-- Back Button & Header -->
+            <div class="flex items-center justify-between">
+                <button onclick="switchTab('dashboard')" class="flex items-center space-x-2 text-xs font-medium text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg transition-smooth">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    <span>Kembali ke Lab</span>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <span id="detail-status-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"></span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left: Hardware Info & Controls -->
+                <div class="space-y-6">
+                    <!-- PC Header Info Card -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 id="detail-pc-name" class="text-xl font-bold text-white">PC-01</h2>
+                            <span id="detail-ip" class="text-xs font-mono bg-slate-800 px-2.5 py-1 rounded border border-slate-700 text-indigo-400">192.168.1.101</span>
+                        </div>
+                        
+                        <div class="space-y-3 text-xs border-t border-slate-800 pt-4">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Siswa / User:</span>
+                                <span id="detail-user" class="font-medium text-slate-200">Lab Komputer A</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">OS / Kernel:</span>
+                                <span id="detail-os" class="font-medium text-slate-200">Windows 11 Pro / Debian 13 Client</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">MAC Address:</span>
+                                <span id="detail-mac" class="font-mono text-slate-300">A1:B2:C3:D4:E5:F6</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Suhu Motherboard:</span>
+                                <span id="detail-temp" class="font-semibold text-emerald-400">42°C</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Remote Control Panel -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="shield-alert" class="w-4 h-4 text-indigo-400"></i>
+                            Panel Kendali Jarak Jauh
+                        </h3>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <button onclick="executeAction('wakeup')" class="flex items-center justify-center space-x-1.5 p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-200 transition-smooth">
+                                <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
+                                <span>Wake-on-LAN</span>
+                            </button>
+                            <button onclick="executeAction('lock')" class="flex items-center justify-center space-x-1.5 p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-200 transition-smooth">
+                                <i data-lucide="lock" class="w-3.5 h-3.5 text-indigo-400"></i>
+                                <span>Kunci Layar</span>
+                            </button>
+                            <button onclick="executeAction('restart')" class="flex items-center justify-center space-x-1.5 p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-amber-400 hover:bg-amber-500/10 transition-smooth">
+                                <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                                <span>Remote Restart</span>
+                            </button>
+                            <button onclick="executeAction('shutdown')" class="flex items-center justify-center space-x-1.5 p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-rose-400 hover:bg-rose-500/10 transition-smooth">
+                                <i data-lucide="power" class="w-3.5 h-3.5"></i>
+                                <span>Shutdown</span>
+                            </button>
+                        </div>
+                        <button onclick="openMessageModal()" class="w-full flex items-center justify-center space-x-2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-sm transition-smooth">
+                            <i data-lucide="message-square" class="w-4 h-4"></i>
+                            <span>Kirim Pesan ke Layar Siswa</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Telemetry Charts (CPU & RAM History) -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Current Usage Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                            <div class="flex justify-between text-xs text-slate-400 mb-1">
+                                <span>Penggunaan CPU</span>
+                                <span id="val-cpu" class="font-bold text-indigo-400">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div id="bar-cpu" class="bg-indigo-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                            <div class="flex justify-between text-xs text-slate-400 mb-1">
+                                <span>Penggunaan RAM</span>
+                                <span id="val-ram" class="font-bold text-emerald-400">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div id="bar-ram" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                            <div class="flex justify-between text-xs text-slate-400 mb-1">
+                                <span>Penyimpanan Disk</span>
+                                <span id="val-disk" class="font-bold text-cyan-400">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div id="bar-disk" class="bg-cyan-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart Canvas Container -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i data-lucide="line-chart" class="w-4 h-4 text-indigo-400"></i>
+                                Grafik Riwayat Resource (Real-Time)
+                            </h3>
+                            <span class="text-xs text-slate-500">Interval: 3 Detik</span>
+                        </div>
+                        <div class="h-72 w-full">
+                            <canvas id="resourceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 3: SERVER DEBIAN 13 BACKEND ================= -->
+        <div id="view-server" class="hidden space-y-6">
+            <!-- Server Status Overview -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-emerald-500/10 border border-emerald-500/20 p-3.5 rounded-xl text-emerald-400">
+                            <i data-lucide="server" class="w-8 h-8"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                Debian 13 <span class="text-xs px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full font-medium">Trixie Active</span>
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">LabGuard Monitoring Daemon v2.4.1 (systemd service)</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="restartDebianService()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 transition-smooth flex items-center gap-1.5">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-indigo-400"></i>
+                            <span>Restart Service</span>
+                        </button>
+                        <button onclick="testServerSSH()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-semibold text-white transition-smooth flex items-center gap-1.5 shadow-sm">
+                            <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+                            <span>Test Koneksi SSH</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Server Settings Config Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">IP Server Debian 13</label>
+                        <input type="text" id="server-ip-input" value="192.168.1.254" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Daemon Port</label>
+                        <input type="text" id="server-port-input" value="8080" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Protocol / Agent</label>
+                        <select class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                            <option>SSH / SNMP v3 (Secure)</option>
+                            <option>LabGuard Agent (WSS)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal / Activity Log Simulation -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="terminal" class="w-4 h-4 text-indigo-400"></i>
+                        <h3 class="text-sm font-bold text-white">Log Aktivitas Server & Real-time Daemon</h3>
+                    </div>
+                    <button onclick="clearTerminalLogs()" class="text-xs text-slate-400 hover:text-slate-200 transition-smooth">Bersihkan Log</button>
+                </div>
+                <div id="terminal-box" class="bg-slate-950 border border-slate-800 rounded-lg p-4 font-mono text-xs h-64 overflow-y-auto space-y-1.5 text-slate-300">
+                    <div class="text-slate-500">[System] Initializing LabGuard daemon on Debian 13 (Trixie)...</div>
+                    <div class="text-emerald-400">[OK] Connected to PostgreSQL backend on 127.0.0.1:5432</div>
+                    <div class="text-indigo-400">[INFO] Scanning 24 client PCs on subnet 192.168.1.0/24...</div>
+                    <div class="text-slate-300">[AGENT] PC-01 to PC-24 heartbeat acknowledged.</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Modal: Broadcast Pesan -->
+    <div id="modal-broadcast" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="megaphone" class="w-5 h-5 text-indigo-400"></i>
+                    Kirim Pesan Broadcast ke Lab
+                </h3>
+                <button onclick="closeBroadcastModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <p class="text-xs text-slate-400">Pesan ini akan muncul sebagai pop-up notification di seluruh layar 24 PC siswa di lab.</p>
+            <textarea id="broadcast-msg-text" rows="4" placeholder="Tulis pengumuman untuk siswa... (cth: Waktu praktik akan segera berakhir, harap simpan tugas kalian.)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"></textarea>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button onclick="closeBroadcastModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold text-slate-300 transition-smooth">Batal</button>
+                <button onclick="sendBroadcastMessage()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-semibold text-white shadow-sm transition-smooth">Kirim Sekarang</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Aksi PC Konfirmasi -->
+    <div id="modal-action" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl text-center">
+            <div id="action-modal-icon" class="w-12 h-12 rounded-full mx-auto flex items-center justify-center bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                <i data-lucide="alert-circle" class="w-6 h-6"></i>
+            </div>
+            <h3 id="action-modal-title" class="text-base font-bold text-white">Konfirmasi Perintah</h3>
+            <p id="action-modal-desc" class="text-xs text-slate-400">Apakah Anda yakin ingin menjalankan perintah ini pada PC terpilih?</p>
+            <div class="flex space-x-3 pt-2">
+                <button onclick="closeActionModal()" class="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold text-slate-300 transition-smooth">Batal</button>
+                <button id="action-modal-confirm-btn" onclick="confirmActionExecution()" class="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-semibold text-white shadow-sm transition-smooth">Ya, Jalankan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-500">
+        LabGuard Monitoring System &copy; 2026 • Dirancang untuk Lab Komputer Sekolah & Server Debian 13
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Data Store for 24 PCs
+        let pcList = [];
+        let currentFilter = 'all';
+        let currentSearchQuery = '';
+        let selectedPcId = 1;
+        let resourceChartInstance = null;
+        let activeActionType = null;
+
+        // Initialize 24 PCs
+        function initPCs() {
+            pcList = [];
+            for (let i = 1; i <= 24; i++) {
+                const idStr = i < 10 ? `0${i}` : `${i}`;
+                // Randomly assign initial statuses for demonstration
+                const rand = Math.random();
+                let status = 'online';
+                if (rand < 0.15) status = 'offline';
+                else if (rand < 0.35) status = 'warning';
+
+                pcList.push({
+                    id: i,
+                    name: `PC-${idStr}`,
+                    ip: `192.168.1.${100 + i}`,
+                    mac: `A1:B2:C3:D4:E5:${i < 10 ? '0' + i : i.toString(16)}`,
+                    user: status === 'offline' ? '-' : `Siswa Lab A-${i}`,
+                    os: 'Windows 11 Pro / Debian Client',
+                    status: status, // online, warning, offline
+                    cpu: status === 'offline' ? 0 : (status === 'warning' ? Math.floor(Math.random() * 20) + 80 : Math.floor(Math.random() * 45) + 10),
+                    ram: status === 'offline' ? 0 : (status === 'warning' ? Math.floor(Math.random() * 15) + 82 : Math.floor(Math.random() * 50) + 25),
+                    disk: status === 'offline' ? 0 : 64,
+                    temp: status === 'offline' ? 0 : Math.floor(Math.random() * 15) + 38,
+                    historyCpu: [30, 35, 40, 42, 45, 50],
+                    historyRam: [50, 52, 55, 58, 60, 62]
+                });
+            }
+        }
+
+        // Render PC Grid on Dashboard
+        function renderPCGrid() {
+            const grid = document.getElementById('pc-grid');
+            grid.innerHTML = '';
+
+            let onlineCount = 0;
+            let warningCount = 0;
+            let offlineCount = 0;
+
+            const filtered = pcList.filter(pc => {
+                const matchesFilter = 
+                    currentFilter === 'all' || 
+                    pc.status === currentFilter;
+                
+                const matchesSearch = 
+                    pc.name.toLowerCase().includes(currentSearchQuery.toLowerCase()) || 
+                    pc.ip.includes(currentSearchQuery) ||
+                    pc.user.toLowerCase().includes(currentSearchQuery.toLowerCase());
+
+                return matchesFilter && matchesSearch;
+            });
+
+            // Count stats globally
+            pcList.forEach(pc => {
+                if (pc.status === 'online') onlineCount++;
+                else if (pc.status === 'warning') warningCount++;
+                else if (pc.status === 'offline') offlineCount++;
+            });
+
+            document.getElementById('stat-online').innerText = onlineCount;
+            document.getElementById('stat-warning').innerText = warningCount;
+            document.getElementById('stat-offline').innerText = offlineCount;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-500 bg-slate-900 border border-slate-800 rounded-xl">
+                        <i data-lucide="search-x" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                        <p class="text-sm">Tidak ada PC yang sesuai dengan filter atau pencarian.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            filtered.forEach(pc => {
+                let statusBadge = '';
+                let borderClass = 'border-slate-800 hover:border-slate-700';
+                
+                if (pc.status === 'online') {
+                    statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Online</span>';
+                } else if (pc.status === 'warning') {
+                    statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">High Load</span>';
+                    borderClass = 'border-amber-500/40 hover:border-amber-500/60';
+                } else {
+                    statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">Offline</span>';
+                    borderClass = 'border-rose-900/40 opacity-75';
+                }
+
+                const card = document.createElement('div');
+                card.className = `bg-slate-900 border ${borderClass} rounded-xl p-4 flex flex-col justify-between space-y-4 shadow-sm transition-smooth hover:shadow-md cursor-pointer group`;
+                card.onclick = () => openDetailView(pc.id);
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-2">
+                                <div class="p-2 rounded-lg bg-slate-800 group-hover:bg-indigo-600/20 group-hover:text-indigo-400 text-slate-300 transition-smooth">
+                                    <i data-lucide="monitor" class="w-4 h-4"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white">${pc.name}</h4>
+                                    <span class="text-[10px] font-mono text-slate-400">${pc.ip}</span>
+                                </div>
+                            </div>
+                            ${statusBadge}
+                        </div>
+                        <p class="text-xs text-slate-400 truncate mt-1">User: <span class="text-slate-300 font-medium">${pc.user}</span></p>
+                    </div>
+
+                    <div class="space-y-2 pt-2 border-t border-slate-800/80">
+                        <div>
+                            <div class="flex justify-between text-[11px] mb-1">
+                                <span class="text-slate-400">CPU</span>
+                                <span class="font-medium text-slate-200">${pc.cpu}%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-indigo-500 h-full rounded-full" style="width: ${pc.cpu}%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] mb-1">
+                                <span class="text-slate-400">RAM</span>
+                                <span class="font-medium text-slate-200">${pc.ram}%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-emerald-500 h-full rounded-full" style="width: ${pc.ram}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Tab Switching
+        function switchTab(tabName) {
+            const viewDashboard = document.getElementById('view-dashboard');
+            const viewDetail = document.getElementById('view-detail');
+            const viewServer = document.getElementById('view-server');
+
+            const btnDash = document.getElementById('btn-tab-dashboard');
+            const btnServer = document.getElementById('btn-tab-server');
+
+            viewDashboard.classList.add('hidden');
+            viewDetail.classList.add('hidden');
+            viewServer.classList.add('hidden');
+
+            btnDash.className = "px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-smooth";
+            btnServer.className = "px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-smooth";
+
+            if (tabName === 'dashboard') {
+                viewDashboard.classList.remove('hidden');
+                btnDash.className = "px-4 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-sm transition-smooth";
+            } else if (tabName === 'detail') {
+                viewDetail.classList.remove('hidden');
+            } else if (tabName === 'server') {
+                viewServer.classList.remove('hidden');
+                btnServer.className = "px-4 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-sm transition-smooth";
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Filter Controls
+        function setFilter(filterType) {
+            currentFilter = filterType;
+            ['all', 'online', 'warning', 'offline'].forEach(f => {
+                const btn = document.getElementById(`filter-btn-${f}`);
+                if (f === filterType) {
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition-smooth whitespace-nowrap";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-smooth whitespace-nowrap";
+                }
+            });
+            renderPCGrid();
+        }
+
+        function handleSearch() {
+            currentSearchQuery = document.getElementById('pc-search-input').value;
+            renderPCGrid();
+        }
+
+        // Open Detail View for specific PC
+        function openDetailView(id) {
+            selectedPcId = id;
+            const pc = pcList.find(item => item.id === id);
+            if (!pc) return;
+
+            document.getElementById('detail-pc-name').innerText = pc.name;
+            document.getElementById('detail-ip').innerText = pc.ip;
+            document.getElementById('detail-user').innerText = pc.user;
+            document.getElementById('detail-os').innerText = pc.os;
+            document.getElementById('detail-mac').innerText = pc.mac;
+            document.getElementById('detail-temp').innerText = `${pc.temp}°C`;
+
+            const badge = document.getElementById('detail-status-badge');
+            if (pc.status === 'online') {
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5";
+                badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Online';
+            } else if (pc.status === 'warning') {
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1.5";
+                badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500"></span> Warning (High Load)';
+            } else {
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30 flex items-center gap-1.5";
+                badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span> Offline';
+            }
+
+            // Usage bars
+            document.getElementById('val-cpu').innerText = `${pc.cpu}%`;
+            document.getElementById('bar-cpu').style.width = `${pc.cpu}%`;
+            document.getElementById('val-ram').innerText = `${pc.ram}%`;
+            document.getElementById('bar-ram').style.width = `${pc.ram}%`;
+            document.getElementById('val-disk').innerText = `${pc.disk}%`;
+            document.getElementById('bar-disk').style.width = `${pc.disk}%`;
+
+            switchTab('detail');
+            initResourceChart(pc);
+        }
+
+        // Chart.js initialization
+        function initResourceChart(pc) {
+            const ctx = document.getElementById('resourceChart').getContext('2d');
+            if (resourceChartInstance) {
+                resourceChartInstance.destroy();
+            }
+
+            resourceChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['10:00', '10:05', '10:10', '10:15', '10:20', 'Sekarang'],
+                    datasets: [
+                        {
+                            label: 'CPU Usage (%)',
+                            data: [pc.cpu - 5, pc.cpu - 2, pc.cpu + 3, pc.cpu - 4, pc.cpu - 1, pc.cpu],
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'RAM Usage (%)',
+                            data: [pc.ram - 3, pc.ram - 1, pc.ram, pc.ram + 2, pc.ram - 2, pc.ram],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: { color: '#334155' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#cbd5e1', font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        // Periodic live simulation update
+        setInterval(() => {
+            pcList.forEach(pc => {
+                if (pc.status !== 'offline') {
+                    // Slight fluctuation
+                    let delta = Math.floor(Math.random() * 7) - 3;
+                    pc.cpu = Math.min(98, Math.max(10, pc.cpu + delta));
+                    let deltaRam = Math.floor(Math.random() * 5) - 2;
+                    pc.ram = Math.min(95, Math.max(20, pc.ram + deltaRam));
+                }
+            });
+            // If dashboard is active, re-render grid smoothly
+            if (!document.getElementById('view-dashboard').classList.contains('hidden')) {
+                renderPCGrid();
+            }
+        }, 3500);
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgCol = type === 'success' ? 'bg-emerald-950 border-emerald-500/40 text-emerald-200' : 'bg-indigo-950 border-indigo-500/40 text-indigo-200';
+            
+            toast.className = `flex items-center space-x-3 px-4 py-3 rounded-xl border ${bgCol} shadow-lg text-xs font-medium transition-all transform translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <i data-lucide="${type === 'success' ? 'check-circle-2' : 'info'}" class="w-4 h-4 flex-shrink-0"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Action Modal Handlers
+        function executeAction(actionType) {
+            activeActionType = actionType;
+            const modal = document.getElementById('modal-action');
+            const title = document.getElementById('action-modal-title');
+            const desc = document.getElementById('action-modal-desc');
+            const pc = pcList.find(p => p.id === selectedPcId);
+
+            if (actionType === 'wakeup') {
+                title.innerText = `Wake-on-LAN (${pc.name})`;
+                desc.innerText = `Mengirim magic packet MAC ${pc.mac} untuk menyalakan PC dari jarak jauh.`;
+            } else if (actionType === 'lock') {
+                title.innerText = `Kunci Layar (${pc.name})`;
+                desc.innerText = `Mengunci layar siswa secara instan dan menampilkan banner pengumuman lab.`;
+            } else if (actionType === 'restart') {
+                title.innerText = `Remote Restart (${pc.name})`;
+                desc.innerText = `Sistem operasi pada ${pc.name} (${pc.ip}) akan melakukan restart dalam beberapa detik.`;
+            } else if (actionType === 'shutdown') {
+                title.innerText = `Shutdown PC (${pc.name})`;
+                desc.innerText = `Mematikan daya ${pc.name} (${pc.ip}) secara aman melalui daemon server.`;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeActionModal() {
+            const modal = document.getElementById('modal-action');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function confirmActionExecution() {
+            const pc = pcList.find(p => p.id === selectedPcId);
+            closeActionModal();
+            showToast(`Perintah [${activeActionType.toUpperCase()}] berhasil dikirim ke ${pc.name} (${pc.ip}).`, 'success');
+            appendTerminalLog(`[ACTION] Executed ${activeActionType} on target ${pc.name} via Debian 13 backend.`);
+        }
+
+        // Broadcast Modal Handlers
+        function openBroadcastModal() {
+            const modal = document.getElementById('modal-broadcast');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeBroadcastModal() {
+            const modal = document.getElementById('modal-broadcast');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function sendBroadcastMessage() {
+            const msg = document.getElementById('broadcast-msg-text').value;
+            if (!msg.trim()) {
+                showToast('Pesan broadcast tidak boleh kosong!', 'info');
+                return;
+            }
+            closeBroadcastModal();
+            document.getElementById('broadcast-msg-text').value = '';
+            showToast('Pesan berhasil disiarkan ke seluruh 24 PC Lab Komputer!', 'success');
+            appendTerminalLog(`[BROADCAST] Sent message to all active agents: "${msg}"`);
+        }
+
+        // Server Debian 13 Actions
+        function restartDebianService() {
+            showToast('Daemon systemd labguard.service berhasil direstart di Debian 13.', 'success');
+            appendTerminalLog('[SYSTEM] Restarting systemd daemon: systemctl restart labguard.service');
+        }
+
+        function testServerSSH() {
+            const ip = document.getElementById('server-ip-input').value;
+            showToast(`Koneksi SSH aman terverifikasi ke Debian 13 (${ip}:22).`, 'success');
+            appendTerminalLog(`[SSH] Handshake established with root@${ip} via Ed25519 key.`);
+        }
+
+        function clearTerminalLogs() {
+            const term = document.getElementById('terminal-box');
+            term.innerHTML = `<div class="text-slate-500">[System] Terminal logs cleared. Ready for operations.</div>`;
+            showToast('Log terminal dibersihkan.', 'info');
+        }
+
+        function appendTerminalLog(text) {
+            const term = document.getElementById('terminal-box');
+            const div = document.createElement('div');
+            div.className = "text-slate-300";
+            div.innerText = text;
+            term.appendChild(div);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function refreshData() {
+            const icon = document.getElementById('refresh-icon');
+            icon.classList.add('animate-spin');
+            setTimeout(() => {
+                icon.classList.remove('animate-spin');
+                renderPCGrid();
+                showToast('Status telemetry 24 PC berhasil diperbarui.', 'success');
+            }, 600);
+        }
+
+        // Window Load Initialization
+        window.onload = function() {
+            initPCs();
+            renderPCGrid();
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
